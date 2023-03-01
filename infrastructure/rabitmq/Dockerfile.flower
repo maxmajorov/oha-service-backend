@@ -1,0 +1,6 @@
+FROM python:3.6-slim
+RUN pip install flower==0.9.3
+COPY ./flower-entrypoint.sh /app/flower-entrypoint.sh
+WORKDIR /app
+EXPOSE 5555
+CMD ["/bin/bash", "/app/flower-entrypoint.sh"]

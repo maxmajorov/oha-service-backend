@@ -1,0 +1,44 @@
+version: "3.7"
+
+services:
+  postgres:
+    image: postgres:11.4-alpine
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_DB: ohaoha
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/local_data/:/var/lib/postgresql
+      - ./app/data/backups/:/app/data/backups/
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbit
+      - RABBITMQ_DEFAULT_PASS=rabbit
+      - RABBITMQ_DEFAULT_VHOST=ohaoha
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  flower:
+    build:
+      context: ./infrastructure/rabitmq
+      dockerfile: Dockerfile.flower
+    environment:
+      - FLOWER_BROKER=amqp://rabbit:rabbit@rabbitmq:5672/ohaoha
+      # https://flower.readthedocs.io/en/latest/config.html
+      - FLOWER_BASIC_AUTH=master:Passw0rdFIN
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5555:5555"

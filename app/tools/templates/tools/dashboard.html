@@ -1,0 +1,93 @@
+{% extends 'tools/base_dashboard.html' %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+        {% for indicator in indicators %}
+            <!-- Card {{ forloop.counter }} -->
+            <div class="col-xl-3 col-md-6 mb-4">
+              <div class="card border-left-{{ indicator.color }} shadow h-100 py-2">
+                <div class="card-body">
+                  <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                      <div class="text-xs font-weight-bold text-{{ indicator.color }} text-uppercase mb-1">{{ indicator.text }}</div>
+                      <div class="h5 mb-0 font-weight-bold text-gray-800">{{ indicator.value }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row ml-0 mb-3 mt-2">
+            <ul class="nav nav-pills">
+              <li class="nav-item">
+                <a class="nav-link{% if group == 'day' %} active{% endif %}" href="{% url 'stats' %}?group=day">день</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link{% if group == 'week' %} active{% endif %}" href="{% url 'stats' %}?group=week">неделя</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link{% if group == 'month' %} active{% endif %}" href="{% url 'stats' %}?group=month">месяц</a>
+              </li>
+            </ul>
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="card shadow">
+                    <div class="card-header">Регистрация</div>
+                    <div class="card-body">
+                        <div id="container">
+                            <canvas id="mainChart" data-url="{% url 'ajax_chart_data' 2 group %}" height="130vh"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="card shadow">
+                    <div class="card-header">Всего запросов</div>
+                    <div class="card-body">
+                        <div id="container">
+                            <canvas id="mainChart2" data-url="{% url 'ajax_chart_data' 1 group %}" height="130vh"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}
+
+{% block js_data %}
+<script>
+    $(function () {
+      var canvas = document.getElementsByTagName("canvas");
+      var canvas_ids = [];
+      for(var i = 0;i < canvas.length; i++)
+      {
+          canvas_ids.push(canvas[i].id)
+      }
+      canvas_ids.forEach(get_data_func);
+
+      function get_data_func(item, index) {
+          var chart = $("#"+item);
+          $.ajax({
+            url: chart.data("url"),
+            success: function (data) {
+
+              var ctx = chart[0].getContext("2d");
+              new Chart(ctx, {
+                type: data.type,
+                data: data.data,
+                options: data.options,
+              });
+            }
+          });
+      }
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,11 @@
+-r requirements.txt
+pre-commit
+pyOpenSSL==19.0.0
+
+# Test
+pytest==5.1.2
+pytest-django==3.5.1
+pytest-sugar==0.9.2
+
+# https run server
+Werkzeug==0.15.5

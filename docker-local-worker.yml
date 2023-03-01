@@ -1,0 +1,55 @@
+version: '3.7'
+
+services:
+
+  worker_hi:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    volumes:
+      - /Users/kulikovaleksandr/projects/_share/Google_cloud:/app/Google_cloud
+      - /Users/kulikovaleksandr/projects/research/ohooho/app/data:/app/data
+    environment:
+      - DJANGO_SETTINGS_MODULE=app.settings.dev
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/Google_cloud/Ohooho-a790a80c46f2.json
+      - OHA_RABBITMQ_HOST=rabbitmq
+      - DB_HOST=postgres
+    command: ["start-celery-worker.sh", "-E", "-Q high_priority", "--autoscale 6,2", "-n worker_hi"]
+    networks:
+      - ohooho_default
+
+  worker_lo:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    volumes:
+      - /Users/kulikovaleksandr/projects/_share/Google_cloud:/app/Google_cloud
+      - /Users/kulikovaleksandr/projects/research/ohooho/app/data:/app/data
+    environment:
+      - DJANGO_SETTINGS_MODULE=app.settings.dev
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/Google_cloud/Ohooho-a790a80c46f2.json
+      - OHA_RABBITMQ_HOST=rabbitmq
+      - DB_HOST=postgres
+    command: ["start-celery-worker.sh", "-E", "-Q high_priority,low_priority", "--autoscale 6,1", "-n worker_lo"]
+    networks:
+      - ohooho_default
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    volumes:
+      - /Users/kulikovaleksandr/projects/_share/Google_cloud:/app/Google_cloud
+    command: ["start-celery-worker.sh", "--scheduler django_celery_beat.schedulers:DatabaseScheduler"]
+    environment:
+      - DJANGO_SETTINGS_MODULE=app.settings.dev
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/Google_cloud/Ohooho-a790a80c46f2.json
+      - OHA_RABBITMQ_HOST=rabbitmq
+      - DB_HOST=postgres
+      - CELERY_WORKER=beat
+    networks:
+      - ohooho_default
+
+networks:
+  ohooho_default:
+    external: true

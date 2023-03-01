@@ -1,0 +1,17 @@
+FROM noxxer/python37_science_image:latest
+
+WORKDIR /app
+
+RUN pip3 install --upgrade pip
+RUN pip3 install -U pip setuptools
+
+COPY requirements.txt /app
+COPY ./infrastructure/libraries /app/infrastructure/libraries
+RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
+
+EXPOSE 8000
+ENV CELERY_APP=app
+
+COPY ./app /app
+COPY ./start-celery-worker.sh /usr/local/bin/start-celery-worker.sh
+RUN chmod +x /usr/local/bin/start-celery-worker.sh

@@ -1,0 +1,53 @@
+image: docker:latest
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+services:
+    - docker:dind
+
+stages:
+    - build
+    - deploy
+
+before_script:
+    - apk add --no-cache py-pip python3-dev libffi-dev openssl-dev gcc libc-dev make
+    - pip3 -q install docker-compose pathlib
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+build_job:
+    stage: build
+    only:
+        - develop
+        - master
+    script:
+        - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+        - VERSION=${VERSION:-$(python3 app/version.py)}
+        - REGISTRY="$CI_REGISTRY/$CI_PROJECT_PATH"
+        - REGISTRY=${REGISTRY} VERSION=${VERSION} sh ./publish_images.sh
+
+deploy_prod_job:
+    stage: deploy
+    image: python:3.7-alpine
+    only:
+       - master
+    environment:
+        name: production
+    before_script:
+      - apk add --update git openssh-client
+      - mkdir -p ~/.ssh
+      - echo "$DEPLOY_RELEASE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - eval "$(ssh-agent -s)"
+      - ssh-add ~/.ssh/id_rsa
+      - ssh-keyscan -H $DEPLOY_RELEASE_IP >> ~/.ssh/known_hosts
+      - echo "$CI_REGISTRY"
+      - echo "$CI_REGISTRY_IMAGE"
+    script:
+      - VERSION=${VERSION:-$(python3 app/version.py)}
+      - echo ${VERSION}
+      - DEPLOY_FOLDER=ohaoha
+      - DEPLOY_USER=deploy
+      - scp deploy/prod/docker-compose.prod.yml $DEPLOY_USER@$DEPLOY_RELEASE_IP:~/$DEPLOY_FOLDER
+      - scp deploy/prod/redeploy.prod.sh $DEPLOY_USER@$DEPLOY_RELEASE_IP:~/$DEPLOY_FOLDER
+      - ssh $DEPLOY_USER@$DEPLOY_RELEASE_IP "docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}; cd ~/$DEPLOY_FOLDER; chmod u+x ./redeploy.prod.sh; ./redeploy.prod.sh"

@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+  rabbitmq:
+    build: .
+    env_file:
+      - rmq-prod.env
+    restart: unless-stopped
+    networks:
+      - nginx_default
+
+  oha-flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.flower
+    env_file:
+      - rmq-prod.env
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - nginx_default
+
+  tw-flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.flower
+    env_file:
+      - tw-rmq-prod.env
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - nginx_default
+
+networks:
+  nginx_default:
+    external: true

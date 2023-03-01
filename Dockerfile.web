@@ -1,0 +1,18 @@
+FROM noxxer/python37_science_image:latest
+
+WORKDIR /app
+
+RUN pip3 install --upgrade pip
+RUN pip3 install -U pip setuptools
+
+COPY requirements.txt /app
+COPY ./infrastructure/libraries /app/infrastructure/libraries
+RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
+
+COPY ./app /app
+RUN chmod +x ./startup.sh
+
+RUN cd /app/docs && make clean && make html
+
+EXPOSE 8000
+CMD ["./startup.sh"]

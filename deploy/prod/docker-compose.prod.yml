@@ -1,0 +1,85 @@
+version: '3.7'
+
+services:
+  oha-app-prod-web:
+    image: registry.gitlab.com/tochka-masters/ohooho/web:latest
+    env_file:
+      - prod.env
+    volumes:
+      - /home/deploy/ohaoha/_docker_share/in_static:/app/static
+      - /home/deploy/ohaoha/_docker_share/in_media:/app/media
+      - /home/deploy/ohaoha/_docker_share/in_data:/app/data
+      - /home/deploy/ohaoha/_docker_share/in_docs:/app/docs/build/html
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3m"
+        max-file: "2"
+    networks:
+      - nginx_default
+
+  oha-app-prod-beat:
+    image: registry.gitlab.com/tochka-masters/ohooho/worker:latest
+    env_file:
+      - prod.env
+    environment:
+      - CELERY_LOGLEVEL=info
+      - CELERY_WORKER=beat
+    command: ["start-celery-worker.sh", "--scheduler django_celery_beat.schedulers:DatabaseScheduler"]
+    volumes:
+      - /home/deploy/ohaoha/_docker_share/in_static:/app/static
+      - /home/deploy/ohaoha/_docker_share/in_media:/app/media
+      - /home/deploy/ohaoha/_docker_share/in_data:/app/data
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3m"
+        max-file: "2"
+    networks:
+      - nginx_default
+
+  oha-app-prod-worker-hi:
+    image: registry.gitlab.com/tochka-masters/ohooho/worker:latest
+    env_file:
+      - prod.env
+    environment:
+      - CELERY_LOGLEVEL=info
+    volumes:
+      - /home/deploy/ohaoha/_docker_share/in_static:/app/static
+      - /home/deploy/ohaoha/_docker_share/in_media:/app/media
+      - /home/deploy/ohaoha/_docker_share/in_data:/app/data
+    command: ["start-celery-worker.sh", "-E", "-Q high_priority", "--autoscale 6,1", "-n worker_hi"]
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3m"
+        max-file: "2"
+    networks:
+      - nginx_default
+
+  oha-app-prod-worker-lo:
+    image: registry.gitlab.com/tochka-masters/ohooho/worker:latest
+    env_file:
+      - prod.env
+    environment:
+      - CELERY_LOGLEVEL=info
+    volumes:
+      - /home/deploy/ohaoha/_docker_share/in_static:/app/static
+      - /home/deploy/ohaoha/_docker_share/in_media:/app/media
+      - /home/deploy/ohaoha/_docker_share/in_data:/app/data
+    command: ["start-celery-worker.sh", "-E", "-Q high_priority,low_priority", "--autoscale 6,1", "-n worker_lo"]
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3m"
+        max-file: "2"
+    networks:
+      - nginx_default
+
+networks:
+  nginx_default:
+    external: true
