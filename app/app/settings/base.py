@@ -89,6 +89,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -97,8 +98,22 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
     'core.middleware.EasyTimezoneMiddleware',
     'core.middleware.SetLastVisitMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
+
+# Запрещаем запросы от кого попало и разрешаем от определенных доменов из whitelist
+CORS_ORIGIN_ALLOW_ALL = False
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:3000',
+]
+
+CORS_ALLOW_HEADERS = ('content-disposition', 'accept-encoding',
+                      'content-type', 'accept', 'origin', 'Authorization',
+                      'access-control-allow-methods')
 
 ROOT_URLCONF = 'app.urls'
 
